@@ -1,9 +1,6 @@
 const express = require("express");
-const jwt = require("jsonwebtoken");
 
 const users = require("./data.json");
-
-const SECRET_KEY = "your-secret-key-12345"; // In a real app, this would be in environment variables
 
 const getUserById = (userId) => {
   return users.find((user) => user.id === userId);
@@ -44,9 +41,11 @@ router.post("/api/login", (req, res) => {
  * Returns user information including profile, goals, and statistics
  */
 router.get("/api/user-info", authenticateToken, (req, res) => {
-  const token = req.headers.authorization.split(" ")[1];
-  const decodedToken = jwt.verify(token, SECRET_KEY);
-  const user = getUserById(decodedToken.userId);
+  const user = getUserById(req.user.userId);
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
   const runningData = user.runningData;
 
   // Calculate overall statistics
