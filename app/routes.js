@@ -1,9 +1,6 @@
 const express = require("express");
-const jwt = require("jsonwebtoken");
 
 const users = require("./data.json");
-
-const SECRET_KEY = "your-secret-key-12345"; // In a real app, this would be in environment variables
 
 const getUserById = (userId) => {
   return users.find((user) => user.id === userId);
@@ -44,21 +41,38 @@ router.post("/api/login", (req, res) => {
  * Returns user information including profile, goals, and statistics
  */
 router.get("/api/user-info", authenticateToken, (req, res) => {
-  const token = req.headers.authorization.split(" ")[1];
-  const decodedToken = jwt.verify(token, SECRET_KEY);
-  const user = getUserById(decodedToken.userId);
-  const runningData = user.runningData;
+  const user = getUserById(req.user.userId);
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  // Only count sessions that already happened, consistent with /api/user-activity
+  const now = new Date();
+  const runningData = user.runningData.filter(
+    (session) => new Date(session.date) <= now
+  );
 
   // Calculate overall statistics
-  const totalDistance = runningData.reduce(
-    (sum, session) => sum + session.distance,
-    0
-  ).toFixed(1);
+  const totalDistance =
+    Math.round(
+      runningData.reduce((sum, session) => sum + session.distance, 0) * 10
+    ) / 10;
   const totalSessions = runningData.length;
   const totalDuration = runningData.reduce(
     (sum, session) => sum + session.duration,
     0
   );
+  const totalCalories = runningData.reduce(
+    (sum, session) => sum + session.caloriesBurned,
+    0
+  );
+
+  // Rest days: days since sign-up (inclusive) without any running session
+  const MS_PER_DAY = 24 * 60 * 60 * 1000;
+  const daysSinceSignup =
+    Math.floor((now - new Date(user.userInfos.createdAt)) / MS_PER_DAY) + 1;
+  const activeDays = new Set(runningData.map((session) => session.date)).size;
+  const restDays = Math.max(daysSinceSignup - activeDays, 0);
 
   // Extract user profile information
   const userProfile = {
@@ -66,17 +80,28 @@ router.get("/api/user-info", authenticateToken, (req, res) => {
     lastName: user.userInfos.lastName,
     createdAt: user.userInfos.createdAt,
     age: user.userInfos.age,
+    gender: user.userInfos.gender,
     weight: user.userInfos.weight,
     height: user.userInfos.height,
     profilePicture: user.userInfos.profilePicture,
   };
 
+  // Weekly goal is stored either as `weeklyGoal` (current schema) or as
+  // `goal` (legacy schema). Return the field as stored, without merging.
+  const userGoal =
+    user.weeklyGoal !== undefined
+      ? { weeklyGoal: user.weeklyGoal }
+      : { goal: user.goal };
+
   return res.json({
     profile: userProfile,
+    ...userGoal,
     statistics: {
       totalDistance,
       totalSessions,
       totalDuration,
+      totalCalories,
+      restDays,
     },
   });
 });
