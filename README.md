@@ -94,17 +94,27 @@ Returns the user profile and overall statistics:
     "lastName": "string",
     "createdAt": "string",
     "age": number,
+    "gender": "string",
     "weight": number,
     "height": number,
     "profilePicture": "string"
   },
+  "weeklyGoal": number,
   "statistics": {
-    "totalDistance": "string",
+    "totalDistance": number,
     "totalSessions": number,
-    "totalDuration": number
+    "totalDuration": number,
+    "totalCalories": number,
+    "restDays": number
   }
 }
 ```
+
+- `weeklyGoal`: number of running sessions the user aims to do per week. Some accounts still use the legacy schema and return this value as `goal` instead of `weeklyGoal`.
+- `statistics` are computed on past sessions only (future dates excluded), so they match the sessions returned by `/api/user-activity`.
+- `totalDistance` is rounded to one decimal.
+- `totalCalories` is the sum of `caloriesBurned` over all past sessions.
+- `restDays` is the number of days since sign-up (`createdAt`, inclusive) without any running session.
 
 #### Get Activity Sessions
 ```http
@@ -128,6 +138,7 @@ Serves the static profile images (e.g. the `profilePicture` URLs returned by `/a
 - All dates should be in ISO format (YYYY-MM-DD)
 - All distances are in kilometers
 - All durations are in minutes
+- All calories are in kcal
 
 
 ### 5.3 Examples of queries
