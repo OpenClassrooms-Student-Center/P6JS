@@ -62,6 +62,17 @@ router.get("/api/user-info", authenticateToken, (req, res) => {
     (sum, session) => sum + session.duration,
     0
   );
+  const totalCalories = runningData.reduce(
+    (sum, session) => sum + session.caloriesBurned,
+    0
+  );
+
+  // Rest days: days since sign-up (inclusive) without any running session
+  const MS_PER_DAY = 24 * 60 * 60 * 1000;
+  const daysSinceSignup =
+    Math.floor((now - new Date(user.userInfos.createdAt)) / MS_PER_DAY) + 1;
+  const activeDays = new Set(runningData.map((session) => session.date)).size;
+  const restDays = Math.max(daysSinceSignup - activeDays, 0);
 
   // Extract user profile information
   const userProfile = {
@@ -89,6 +100,8 @@ router.get("/api/user-info", authenticateToken, (req, res) => {
       totalDistance,
       totalSessions,
       totalDuration,
+      totalCalories,
+      restDays,
     },
   });
 });
