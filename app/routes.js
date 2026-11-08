@@ -46,7 +46,11 @@ router.get("/api/user-info", authenticateToken, (req, res) => {
     return res.status(404).json({ message: "User not found" });
   }
 
-  const runningData = user.runningData;
+  // Only count sessions that already happened, consistent with /api/user-activity
+  const now = new Date();
+  const runningData = user.runningData.filter(
+    (session) => new Date(session.date) <= now
+  );
 
   // Calculate overall statistics
   const totalDistance = runningData.reduce(
