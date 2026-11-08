@@ -53,10 +53,10 @@ router.get("/api/user-info", authenticateToken, (req, res) => {
   );
 
   // Calculate overall statistics
-  const totalDistance = runningData.reduce(
-    (sum, session) => sum + session.distance,
-    0
-  ).toFixed(1);
+  const totalDistance =
+    Math.round(
+      runningData.reduce((sum, session) => sum + session.distance, 0) * 10
+    ) / 10;
   const totalSessions = runningData.length;
   const totalDuration = runningData.reduce(
     (sum, session) => sum + session.duration,
