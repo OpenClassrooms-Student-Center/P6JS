@@ -69,13 +69,22 @@ router.get("/api/user-info", authenticateToken, (req, res) => {
     lastName: user.userInfos.lastName,
     createdAt: user.userInfos.createdAt,
     age: user.userInfos.age,
+    gender: user.userInfos.gender,
     weight: user.userInfos.weight,
     height: user.userInfos.height,
     profilePicture: user.userInfos.profilePicture,
   };
 
+  // Weekly goal is stored either as `weeklyGoal` (current schema) or as
+  // `goal` (legacy schema). Return the field as stored, without merging.
+  const userGoal =
+    user.weeklyGoal !== undefined
+      ? { weeklyGoal: user.weeklyGoal }
+      : { goal: user.goal };
+
   return res.json({
     profile: userProfile,
+    ...userGoal,
     statistics: {
       totalDistance,
       totalSessions,
